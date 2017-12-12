@@ -89,10 +89,13 @@ typedef struct bal_blockmatching_pyramidal_param {
 
   
   /* transformation parameters
+     - initial transformation
      - transformation type
      - sigma for elastic regularization (only for vectorfield)
      - fraction of keeped points for least trimmed squares
   */
+
+  enumInitialTransfo default_transformation;
 
   enumTypeTransfo transformation_type;
   bal_pyramidDoublePoint elastic_regularization_sigma;

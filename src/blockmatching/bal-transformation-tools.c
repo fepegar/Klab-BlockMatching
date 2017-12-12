@@ -283,6 +283,33 @@ int BAL_ComputeImageToImageTransformation( bal_image *subsampled_image,
 
 
 
+int BAL_ComputeInitialTransformation( bal_image *refIm,
+                                           bal_image *floIm,
+                                           bal_transformation *theTrsf,
+                                           enumInitialTransfo initial_transformation )
+{
+  char *proc = "BAL_ComputeImageToImageTransformation";
+
+  switch( initial_transformation ) {
+  default :
+    if ( _verbose_ )
+      fprintf( stderr, "%s: such initial transformation type not handled yet\n", proc );
+    return( -1 );
+  case _BAL_IDENTITY_TRANSFORMATION_ :
+    BAL_SetTransformationToIdentity( theTrsf );
+    break;
+  case _BAL_FOVCENTER_TRANSFORMATION_ :
+    if ( BAL_ComputeImageToImageTransformation( refIm, floIm, theTrsf ) != 1 ) {
+      if ( _verbose_ )
+        fprintf( stderr, "%s: unable to compute FOV center based transformation\n", proc );
+      return( -1 );
+    }
+    break;
+  }
+
+  return( 1 );
+}
+
 
 
 

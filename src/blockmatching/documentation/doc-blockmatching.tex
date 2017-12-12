@@ -1,6 +1,7 @@
 \documentclass[10pt]{report}
 \usepackage{amssymb}
 \usepackage{graphicx}
+\usepackage{makeidx}
 
 \setcounter{secnumdepth}{4}
 
@@ -9,20 +10,21 @@
 
 
 
-\def\applyTrsf{\texttt{applyTrsf} }
-\def\applyTrsfToPoints{\texttt{applyTrsfToPoints} }
-\def\baladin{\texttt{baladin} }
-\def\blockmatching{\texttt{blockmatching} }
-\def\buildPyramidImage{\texttt{buildPyramidImage} }
-\def\composeTrsf{\texttt{composeTrsf} }
-\def\copyTrsf{\texttt{copyTrsf} }
-\def\createGrid{\texttt{createGrid} }
-\def\createTrsf{\texttt{createTrsf} }
-\def\cropImage{\texttt{cropImage} }
-\def\invTrsf{\texttt{invTrsf} }
-\def\pointmatching{\texttt{pointmatching} }
-\def\printImage{\texttt{printImage} }
-\def\printTrsf{\texttt{printTrsf} }
+\def\applyTrsf{\texttt{applyTrsf}\index{applyTrsf@\texttt{applyTrsf}} } 
+\def\applyTrsfToPoints{\texttt{applyTrsfToPoints}\index{applyTrsfToPoints@\texttt{applyTrsfToPoints}} }
+\def\baladin{\texttt{baladin}\index{baladin@\texttt{baladin}} }
+\def\blockmatching{\texttt{blockmatching}\index{blockmatching@\texttt{blockmatching}} }
+\def\buildPyramidImage{\texttt{buildPyramidImage}\index{buildPyramidImage@\texttt{buildPyramidImage}} }
+\def\composeTrsf{\texttt{composeTrsf}\index{composeTrsf@\texttt{composeTrsf}} }
+\def\copyTrsf{\texttt{copyTrsf}\index{copyTrsf@\texttt{copyTrsf}} }
+\def\createGrid{\texttt{createGrid}\index{createGrid@\texttt{createGrid}} }
+\def\createTrsf{\texttt{createTrsf}\index{createTrsf@\texttt{createTrsf}} }
+\def\cropImage{\texttt{cropImage}\index{cropImage@\texttt{cropImage}} }
+\def\invTrsf{\texttt{invTrsf}\index{invTrsf@\texttt{invTrsf}} }
+\def\pointmatching{\texttt{pointmatching}\index{pointmatching@\texttt{pointmatching}} }
+\def\printImage{\texttt{printImage}\index{printImage@\texttt{printImage}} }
+\def\printTrsf{\texttt{printTrsf}\index{printTrsf@\texttt{printTrsf}} }
+
 \newenvironment{attention}{\begin{description}\item[{[\textsc{Pay attention}]}]}{\end{description}}
 %\newenvironment{attention}{\noindent \textsc{[Pay attention]}}{}
 % \def\attention{\textsc{[Pay attention]} }
@@ -38,6 +40,8 @@
 
 %\newenvironment{code}[1]{\mbox{}\\[1ex]\begin{minipage}{150mm}\tt}{\end{minipage}\mbox{}\\[1ex]}
 
+
+\makeindex
 
 \begin{document}
 
@@ -82,6 +86,7 @@
 
 
 
+\printindex
 
 
 \end{document}

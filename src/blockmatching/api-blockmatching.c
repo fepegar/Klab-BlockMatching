@@ -332,9 +332,12 @@ static int _API_INTERMEDIARY_blockmatching( char *floating_image,
         if ( par->floating_voxel.y > 0.0 ) theFloatingImage.vy = par->floating_voxel.y;
         if ( par->floating_voxel.z > 0.0 ) theFloatingImage.vz = par->floating_voxel.z;
         if ( BAL_SetImageVoxelSizes( &theFloatingImage, theFloatingImage.vx, theFloatingImage.vy, theFloatingImage.vz ) != 1 ) {
-          if ( _verbose_ )
+            BAL_FreeImage( &theReferenceImage );
+            if ( par->param.verbosef != NULL && par->param.verbosef != stderr && par->param.verbosef != stdout )
+              fclose( par->param.verbosef );
+            if ( _verbose_ )
             fprintf( stderr, "%s: unable to change floating image voxel sizes\n", proc );
-          return(-1);
+          return( -1 );
         }
     }
 
@@ -611,6 +614,29 @@ static int _API_INTERMEDIARY_blockmatching( char *floating_image,
                        proc, floating_image );
           return( -1 );
         }
+
+        if ( par->floating_voxel.x > 0.0 && par->floating_voxel.y > 0.0 ) {
+            if ( par->floating_voxel.x > 0.0 ) theFloatingImage.vx = par->floating_voxel.x;
+            if ( par->floating_voxel.y > 0.0 ) theFloatingImage.vy = par->floating_voxel.y;
+            if ( par->floating_voxel.z > 0.0 ) theFloatingImage.vz = par->floating_voxel.z;
+            if ( BAL_SetImageVoxelSizes( &theFloatingImage, theFloatingImage.vx, theFloatingImage.vy, theFloatingImage.vz ) != 1 ) {
+                if ( composedTransformation != (bal_transformation*)NULL )
+                    BAL_FreeTransformation( &theComposedTransformation );
+                if ( readResultTransformation != (bal_transformation*)NULL )
+                  BAL_FreeTransformation( &theReadResultTransformation );
+                if ( theResultTransformation != readResultTransformation ) {
+                  BAL_FreeTransformation( theResultTransformation );
+                  vtfree( theResultTransformation );
+                }
+                BAL_FreeImage( &theReferenceImage );
+                if ( par->param.verbosef != NULL && par->param.verbosef != stderr && par->param.verbosef != stdout )
+                  fclose( par->param.verbosef );
+              if ( _verbose_ )
+                fprintf( stderr, "%s: unable to change floating image voxel sizes (resampling step)\n", proc );
+              return(-1);
+            }
+        }
+
       }
 
       /* allocate a result image with the same type than the floating one
@@ -1217,6 +1243,7 @@ static char *usage = "-reference|-ref %s -floating|-flo %s -result|-res %s\n\
  [-initial-result-voxel-transformation|-init-res-voxel-trsf %s]\n\
  [-result-transformation|-res-trsf %s]\n\
  [-result-voxel-transformation|-res-voxel-trsf %s]\n\
+ [-default-transformation|-default-trsf [identity|fovcenter]]\n\
  [-reference-voxel %lf %lf [%lf]]\n\
  [-floating-voxel %lf %lf [%lf]]\n\
  [-normalisation|-norma|-rescale|-no-normalisation|-no-norma|-no-rescale]\n\
@@ -1243,7 +1270,8 @@ static char *usage = "-reference|-ref %s -floating|-flo %s -result|-res %s\n\
  [-fluid-sigma|-lts-sigma[-ll|-hl] %lf %lf %lf]\n\
  [-vector-propagation-distance|-propagation-distance|-pdistance %f]\n\
  [-vector-fading-distance|-fading-distance|-fdistance %f]\n\
- [-max-iteration[-ll|-hl]|-max-iter[-ll|-hl] %d] [-corner-ending-condition|-rms]\n\
+ [-max-iteration[-ll|-hl]|-max-iterations[-ll|-hl]|-max-iter[-ll|-hl] %d]|-iterations[-ll|-hl]\n\
+ [-corner-ending-condition|-rms]\n\
  [-gaussian-filter-type|-filter-type deriche|fidrich|young-1995|young-2002|...\n\
  ...|gabor-young-2002|convolution]\n\
  [-default-filenames|-df] [-no-default-filenames|-ndf]\n\
@@ -1291,12 +1319,14 @@ static char *usage = "-reference|-ref %s -floating|-flo %s -result|-res %s\n\
    in 'real' coordinates. Goes from 'reference' to 'floating', ie allows to \n\
    resample 'floating' in the geometry of 'reference'.\n\
    If an initial transformation is given (with either '-initial-transformation' or\n\
-   '-initial-voxel-transformation'), this is the composition of the initial\n\
-   transformation and the computed one, unless '-no-composition-with-initial' is\n\
+   '-initial-voxel-transformation'), this is no composition of the initial\n\
+   transformation and the computed one, unless '-composition-with-initial' is\n\
    specified.\n\
  [-result-voxel-transformation|-res-voxel-trsf %s] # name of the result\n\
    transformation in 'voxel' coordinates.\n\
    Fragile with used in conjonction with '-no-composition-with-initial'\n\
+ [-default-transformation|-default-trsf [identity|fovcenter]]\n\
+   Set the default initial transformation.\n\
  ### image geometry ### \n\
  [-reference-voxel %lf %lf [%lf]]:\n\
    changes/sets the voxel sizes of the reference image\n\
@@ -1385,7 +1415,8 @@ static char *usage = "-reference|-ref %s -floating|-flo %s -result|-res %s\n\
    this allows progressive transition towards null displacements\n\
    and thus avoid discontinuites\n\
  ### end conditions for matching loop ###\n\
- [-max-iteration[-ll|-hl]|-max-iter[-ll|-hl] %d]   # maximal number of iteration\n\
+ [-max-iteration[-ll|-hl]|-max-iterations[-ll|-hl]|-max-iter[-ll|-hl] %d]|...\n\
+  ...|-iterations[-ll|-hl] %d]   # maximal number of iteration\n\
    (see note (1) for [-ll|-hl])\n\
  [-corner-ending-condition|-rms] # evolution of image corners\n\
  ### filter type ###\n\
@@ -1855,6 +1886,7 @@ void API_ParseParam_blockmatching( int firstargc, int argc, char *argv[],
     /* transformation file names
      */
     else if ( strcmp ( argv[i], "-initial-transformation" ) == 0
+              || strcmp ( argv[i], "-initial-trsf" ) == 0
               || strcmp ( argv[i], "-init-trsf" ) == 0
               || strcmp ( argv[i], "-left-transformation" ) == 0
               || strcmp ( argv[i], "-left-trsf" ) == 0 ) {
@@ -1895,6 +1927,22 @@ void API_ParseParam_blockmatching( int firstargc, int argc, char *argv[],
       i++;
       if ( i >= argc) API_ErrorParse_blockmatching( (char*)NULL, "parsing -result-voxel-transformation", 0 );
       (void)strcpy( p->result_voxel_transformation, argv[i] );
+    }
+    else if ( strcmp ( argv[i], "-default-transformation" ) == 0
+              || (strcmp ( argv[i], "-default-trsf" ) == 0 && argv[i][13] == '\0') ) {
+      i++;
+      if ( i >= argc) API_ErrorParse_blockmatching( (char*)NULL, "parsing -default-transformation", 0 );
+      if ( strcmp ( argv[i], "identity") == 0 && argv[i][8] == '\0' ) {
+        p->param.default_transformation = _BAL_IDENTITY_TRANSFORMATION_;
+      }
+      else if ( (strcmp ( argv[i], "fovcenter") == 0 && argv[i][9] == '\0')
+                || (strcmp ( argv[i], "fovcenters") == 0 && argv[i][10] == '\0') ) {
+          p->param.default_transformation = _BAL_FOVCENTER_TRANSFORMATION_;
+      }
+      else {
+        fprintf( stderr, "unknown default transformation type: '%s'\n", argv[i] );
+        API_ErrorParse_blockmatching( (char*)NULL, "parsing -default-transformation ...\n", 0 );
+      }
     }
 
     /* images geometry
@@ -2479,30 +2527,33 @@ void API_ParseParam_blockmatching( int firstargc, int argc, char *argv[],
     /* end conditions for matching loop
      */
     else if ( strcmp ( argv[i], "-max-iteration-lowest-level" ) == 0
-              || strcmp ( argv[i], "-max-iteration-ll" ) == 0
-              || strcmp ( argv[i], "-max-iterations-lowest-level" ) == 0
-              || strcmp ( argv[i], "-max-iterations-ll" ) == 0
+              || strcmp( argv[i], "-max-iteration-ll" ) == 0
+              || strcmp( argv[i], "-max-iterations-lowest-level" ) == 0
+              || strcmp( argv[i], "-max-iterations-ll" ) == 0
               || strcmp( argv[i], "-max-iter-lowest-level" ) == 0
-              || strcmp( argv[i], "-max-iter-ll" ) == 0  ) {
+              || strcmp( argv[i], "-max-iter-ll" ) == 0
+              || strcmp( argv[i], "-iterations-lowest-level" ) == 0 ) {
       i ++;
       if ( i >= argc)    API_ErrorParse_blockmatching( (char*)NULL, "-max-iteration-lowest-level", 0 );
       status = sscanf( argv[i], "%d", &(p->param.max_iterations.lowest) );
       if ( status <= 0 ) API_ErrorParse_blockmatching( (char*)NULL, "-max-iteration-lowest-level", 0 );
     }
     else if ( strcmp ( argv[i], "-max-iteration-highest-level" ) == 0
-              || strcmp ( argv[i], "-max-iteration-hl" ) == 0
-              || strcmp ( argv[i], "-max-iterations-highest-level" ) == 0
-              || strcmp ( argv[i], "-max-iterations-hl" ) == 0
+              || strcmp( argv[i], "-max-iteration-hl" ) == 0
+              || strcmp( argv[i], "-max-iterations-highest-level" ) == 0
+              || strcmp( argv[i], "-max-iterations-hl" ) == 0
               || strcmp( argv[i], "-max-iter-highest-level" ) == 0
-              || strcmp( argv[i], "-max-iter-hl" ) == 0  ) {
+              || strcmp( argv[i], "-max-iter-hl" ) == 0
+              || strcmp( argv[i], "-iterations-highest-level" ) == 0 ) {
       i ++;
       if ( i >= argc)    API_ErrorParse_blockmatching( (char*)NULL, "-max-iteration-highest-level", 0 );
       status = sscanf( argv[i], "%d", &(p->param.max_iterations.highest) );
       if ( status <= 0 ) API_ErrorParse_blockmatching( (char*)NULL, "-max-iteration-highest-level", 0 );
     }
-    else if ( (strcmp ( argv[i], "-max-iteration" ) == 0 && argv[i][14] == '\0')
-              || (strcmp ( argv[i], "-max-iterations" ) == 0 && argv[i][15] == '\0')
-              || (strcmp( argv[i], "-max-iter" ) == 0 && argv[i][9] == '\0') ) {
+    else if ( (strcmp( argv[i], "-max-iteration" ) == 0 && argv[i][14] == '\0')
+              || (strcmp( argv[i], "-max-iterations" ) == 0 && argv[i][15] == '\0')
+              || (strcmp( argv[i], "-max-iter" ) == 0 && argv[i][9] == '\0')
+              || (strcmp( argv[i], "-iterations" ) == 0 && argv[i][11] == '\0') ) {
       i ++;
       if ( i >= argc)    API_ErrorParse_blockmatching( (char*)NULL, "-max-iteration", 0 );
       status = sscanf( argv[i], "%d", &(p->param.max_iterations.lowest) );

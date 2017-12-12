@@ -98,7 +98,7 @@ typedef enum {
  *
  ****************************************/
 
-typedef enum {
+typedef enum enumTypeTransfo {
   UNDEF_TRANSFORMATION,
   TRANSLATION_2D,
   TRANSLATION_3D,
@@ -115,12 +115,16 @@ typedef enum {
   SPLINE
 } enumTypeTransfo;
 
-typedef enum {
+typedef enum enumUnitTransfo {
   UNDEF_UNIT,
   VOXEL_UNIT,
   REAL_UNIT
 } enumUnitTransfo;
 
+typedef enum enumInitialTransfo {
+  _BAL_IDENTITY_TRANSFORMATION_,
+  _BAL_FOVCENTER_TRANSFORMATION_
+} enumInitialTransfo;
 
 
 /****************************************

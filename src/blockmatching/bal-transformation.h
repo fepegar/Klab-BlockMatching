@@ -37,7 +37,12 @@ extern "C" {
 
 
 
-  
+
+/*--------------------------------------------------
+ *
+ * TRANSFORMATION STRUCTURES
+ *
+ --------------------------------------------------*/
 
 typedef struct {
 
@@ -88,6 +93,12 @@ typedef struct {
 } bal_transformationArray;
 
 
+
+/*--------------------------------------------------
+ *
+ *
+ *
+ --------------------------------------------------*/
 
 extern int BAL_GetVerboseInBalTransformation( );
 extern void BAL_SetVerboseInBalTransformation( int v );

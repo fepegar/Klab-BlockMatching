@@ -485,7 +485,7 @@ static int _imageIODataToNiftiData( _image *im, nifti_image *nim )
   size_t x, y, z, v;
 
   if ( im->vdim == 1 ) {
-    (void)memcpy( im->data, nim->data, nim->nvox * nim->nbyper );
+    (void)memcpy( nim->data, im->data, nim->nvox * nim->nbyper );
     return( 1 );
   }
 

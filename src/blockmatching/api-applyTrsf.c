@@ -222,6 +222,7 @@ int API_INTERMEDIARY_applyTrsf( char* theimage_name,
     /* reading transformation, if any
      */
     BAL_InitTransformation( &theTrsf );
+
     if ( real_transformation_name != (char*)NULL && real_transformation_name[0] != '\0' ) {
       if ( BAL_ReadTransformation( &theTrsf, real_transformation_name ) != 1 ) {
         BAL_FreeImage( &theIm );
@@ -286,12 +287,15 @@ int API_INTERMEDIARY_applyTrsf( char* theimage_name,
         BAL_FreeImage( &tempIm );
 
         /* change voxel sizes from template
+         * may be fragile if the template image has a Qform matrix
          */
-        if ( par.template_voxel.x > 0.0 && par.template_voxel.y > 0.0 ) {
+        if ( par.template_voxel.x > 0.0 || par.template_voxel.y > 0.0 || par.template_voxel.z > 0.0 ) {
           if ( par.template_voxel.x > 0.0 ) resIm.vx = par.template_voxel.x;
           if ( par.template_voxel.y > 0.0 ) resIm.vy = par.template_voxel.y;
           if ( par.template_voxel.z > 0.0 ) resIm.vz = par.template_voxel.z;
           if ( BAL_SetImageVoxelSizes( &resIm, resIm.vx, resIm.vy, resIm.vz ) != 1 ) {
+            BAL_FreeTransformation( &theTrsf );
+            BAL_FreeImage( &theIm );
             if ( _verbose_ )
               fprintf( stderr, "%s: unable to initialize result image voxel sizes (from template image)\n", proc );
             return(-1);
@@ -323,10 +327,25 @@ int API_INTERMEDIARY_applyTrsf( char* theimage_name,
           return(-1);
         }
       }
+      if ( BAL_AllocImageGeometry( &resIm ) != 1 ) {
+        BAL_FreeTransformation( &theTrsf );
+        BAL_FreeImage( &theIm );
+        if ( _verbose_ )
+          fprintf( stderr, "%s: geometry allocation error\n", proc );
+        return( -1 );
+      }
       if ( par.resize == 1 || ptrTrsf == (bal_transformation*)NULL ) {
           resIm.vx = ( theIm.ncols * theIm.vx ) / ((float)resIm.ncols);
           resIm.vy = ( theIm.nrows * theIm.vy ) / ((float)resIm.nrows);
           resIm.vz = ( theIm.nplanes * theIm.vz ) / ((float)resIm.nplanes);
+          if ( BAL_ResizeImageGeometry( &theIm, &resIm ) != 1 ) {
+            BAL_FreeTransformation( &theTrsf );
+            BAL_FreeImage( &theIm );
+            BAL_FreeImage( &resIm );
+            if ( _verbose_ )
+              fprintf( stderr, "%s: unable to set result image geometry (from parameters)\n", proc );
+            return(-1);
+          }
       }
       else {
           resIm.vx = theIm.vx;
@@ -335,11 +354,14 @@ int API_INTERMEDIARY_applyTrsf( char* theimage_name,
           if ( par.template_voxel.x > 0.0 ) resIm.vx = par.template_voxel.x;
           if ( par.template_voxel.y > 0.0 ) resIm.vy = par.template_voxel.y;
           if ( par.template_voxel.z > 0.0 ) resIm.vz = par.template_voxel.z;
-      }
-      if ( BAL_SetImageVoxelSizes( &resIm, resIm.vx, resIm.vy, resIm.vz ) != 1 ) {
-        if ( _verbose_ )
-          fprintf( stderr, "%s: unable to initialize result image voxel sizes (from parameters)\n", proc );
-        return(-1);
+          if ( BAL_SetImageVoxelSizes( &resIm, resIm.vx, resIm.vy, resIm.vz ) != 1 ) {
+            BAL_FreeTransformation( &theTrsf );
+            BAL_FreeImage( &theIm );
+            BAL_FreeImage( &resIm );
+            if ( _verbose_ )
+              fprintf( stderr, "%s: unable to initialize result image voxel sizes (from parameters)\n", proc );
+            return(-1);
+          }
       }
     }
 
@@ -354,6 +376,7 @@ int API_INTERMEDIARY_applyTrsf( char* theimage_name,
         if ( par.template_voxel.z <= 0.0 ) {
           BAL_FreeTransformation( &theTrsf );
           BAL_FreeImage( &theIm );
+          BAL_FreeImage( &resIm );
           if ( _verbose_ )
             fprintf( stderr, "%s: unable to calculate result image Z dimension (from parameters, 3D case)\n", proc );
           return(-1);
@@ -363,6 +386,7 @@ int API_INTERMEDIARY_applyTrsf( char* theimage_name,
                                  par.template_dim.z, theIm.vdim, theIm.type ) != 1 ) {
           BAL_FreeTransformation( &theTrsf );
           BAL_FreeImage( &theIm );
+          BAL_FreeImage( &resIm );
           if ( _verbose_ )
             fprintf( stderr, "%s: unable to initialize result image (from parameters, 3D case)\n", proc );
           return(-1);
@@ -373,17 +397,29 @@ int API_INTERMEDIARY_applyTrsf( char* theimage_name,
                                  1, theIm.vdim, theIm.type ) != 1 ) {
           BAL_FreeTransformation( &theTrsf );
           BAL_FreeImage( &theIm );
+          BAL_FreeImage( &resIm );
           if ( _verbose_ )
             fprintf( stderr, "%s: unable to initialize result image (from parameters, 2D case)\n", proc );
           return(-1);
         }
       }
+      if ( BAL_AllocImageGeometry( &resIm ) != 1 ) {
+        BAL_FreeTransformation( &theTrsf );
+        BAL_FreeImage( &theIm );
+        BAL_FreeImage( &resIm );
+        if ( _verbose_ )
+          fprintf( stderr, "%s: geometry allocation error\n", proc );
+        return( -1 );
+      }
       if ( par.template_voxel.x > 0.0 ) resIm.vx = par.template_voxel.x;
       if ( par.template_voxel.y > 0.0 ) resIm.vy = par.template_voxel.y;
       if ( par.template_voxel.z > 0.0 ) resIm.vz = par.template_voxel.z;
-      if ( BAL_SetImageVoxelSizes( &resIm, resIm.vx, resIm.vy, resIm.vz ) != 1 ) {
+      if ( BAL_ResizeImageGeometry( &theIm, &resIm ) != 1 ) {
+        BAL_FreeTransformation( &theTrsf );
+        BAL_FreeImage( &theIm );
+        BAL_FreeImage( &resIm );
         if ( _verbose_ )
-          fprintf( stderr, "%s: unable to initialize result image voxel sizes (from parameters)\n", proc );
+          fprintf( stderr, "%s: unable to initialize result geometry (from parameters)\n", proc );
         return(-1);
       }
     }
@@ -398,13 +434,18 @@ int API_INTERMEDIARY_applyTrsf( char* theimage_name,
           fprintf( stderr, "%s: unable to initialize result image (from input image)\n", proc );
         return(-1);
       }
-      if ( par.template_voxel.x > 0.0 ) resIm.vx = par.template_voxel.x;
-      if ( par.template_voxel.y > 0.0 ) resIm.vy = par.template_voxel.y;
-      if ( par.template_voxel.z > 0.0 ) resIm.vz = par.template_voxel.z;
-      if ( BAL_SetImageVoxelSizes( &resIm, resIm.vx, resIm.vy, resIm.vz ) != 1 ) {
-        if ( _verbose_ )
-          fprintf( stderr, "%s: unable to initialize result image voxel sizes (from input image)\n", proc );
-        return(-1);
+      if ( par.template_voxel.x > 0.0 || par.template_voxel.y > 0.0 || par.template_voxel.z > 0.0 ) {
+        if ( par.template_voxel.x > 0.0 ) resIm.vx = par.template_voxel.x;
+        if ( par.template_voxel.y > 0.0 ) resIm.vy = par.template_voxel.y;
+        if ( par.template_voxel.z > 0.0 ) resIm.vz = par.template_voxel.z;
+        if ( BAL_ResizeImageGeometry( &theIm, &resIm ) != 1 ) {
+          BAL_FreeTransformation( &theTrsf );
+          BAL_FreeImage( &theIm );
+          BAL_FreeImage( &resIm );
+          if ( _verbose_ )
+            fprintf( stderr, "%s: unable to initialize result image voxel sizes (from input image)\n", proc );
+          return(-1);
+        }
       }
     }
 
@@ -413,6 +454,7 @@ int API_INTERMEDIARY_applyTrsf( char* theimage_name,
     if ( BAL_AllocImage( &resIm ) != 1 ) {
       BAL_FreeTransformation( &theTrsf );
       BAL_FreeImage( &theIm );
+      BAL_FreeImage( &resIm );
       if ( _verbose_ )
         fprintf( stderr, "%s: unable to allocate result image\n", proc );
       return( -1 );
@@ -428,7 +470,7 @@ int API_INTERMEDIARY_applyTrsf( char* theimage_name,
     if ( (real_transformation_name == (char*)NULL || real_transformation_name[0] == '\0')
          && (voxel_transformation_name == (char*)NULL || voxel_transformation_name[0] == '\0') ) {
 
-      if ( BAL_AllocTransformation( &theTrsf, AFFINE_3D, (bal_image *)NULL ) != 1 ) {
+      if ( BAL_AllocTransformation( &theTrsf, RIGID_3D, (bal_image *)NULL ) != 1 ) {
         BAL_FreeImage( &resIm );
         BAL_FreeImage( &theIm );
         if ( _verbose_ )
@@ -437,13 +479,15 @@ int API_INTERMEDIARY_applyTrsf( char* theimage_name,
       }
 
       /* cf bal-transformation-tools.c
+       * BAL_ComputeImageToImageTransformation() computes the translation
+       * that superimpose the image centers
        */
-      if ( BAL_ComputeImageToImageTransformation( &resIm, &theIm, &theTrsf ) != 1 ) {
+      if ( BAL_ComputeInitialTransformation( &resIm, &theIm, &theTrsf, par.default_transformation ) != 1 ) {
         BAL_FreeTransformation( &theTrsf );
         BAL_FreeImage( &resIm );
         BAL_FreeImage( &theIm );
         if ( _verbose_ )
-          fprintf( stderr, "%s: unable to compute image to image transformation\n", proc );
+          fprintf( stderr, "%s: unable to compute default transformation\n", proc );
         return(-1);
       }
       ptrTrsf = &theTrsf;
@@ -903,10 +947,12 @@ static char **_Str2Array( int *argc, char *str )
 
 
 static char *usage = "[[-floating|-flo] image-in] [[-result|-res] image-out]\n\
- [-transformation |-trsf %s]\n\
+ [-transformation |-trsf %s|identity|fovcenter]\n\
  [-voxel-transformation |-voxel-trsf %s]\n\
  [-result-transformation|-res-trsf %s]\n\
  [-result-voxel-transformation|-res-voxel-trsf %s]\n\
+ [-default-transformation|-default-trsf|-initial-transformation|...\n\
+   ... -initial-trsf|-init-trsf [identity|fovcenter]]\n\
  [-reference-image|-reference|-ref|-template-image|-template|-dims|-t %s]\n\
  [-template-dimension[s]|-template-dim|-dimension[s]|-dim %d %d [%d]]\n\
  [-x %d] [-y %d] [-z %d]\n\
@@ -947,6 +993,10 @@ static char *detail = "\
     to an other image or to combine transformations.\n\
  -result-voxel-transformation|-res-voxel-trsf %s # applied transformation\n\
     in 'voxel' coordinates.\n\
+ -transformation|-trsf [identity|fovcenter]: set default transformation\n\
+ -default-transformation|-default-trsf|-initial-transformation|...\n\
+    -initial-trsf|-init-trsf [identity|fovcenter]:\n\
+    set the default transformation.\n\
 # template image for output image geometry. If no information is given,\n\
     input image geometry is used\n\
  -reference-image|-reference|-ref|...\n\
@@ -1075,6 +1125,8 @@ void API_InitParam_applyTrsf( lineCmdParamApplyTrsf *p )
     (void)strncpy( p->output_real_transformation, "\0", 1 );
     (void)strncpy( p->output_voxel_transformation, "\0", 1 );
 
+    p->default_transformation = _BAL_IDENTITY_TRANSFORMATION_;
+
     (void)strncpy( p->template_name, "\0", 1 );
 
     p->template_dim.x = 0;
@@ -1137,7 +1189,7 @@ void API_PrintParam_applyTrsf( FILE *theFile, char *program,
   else
     fprintf( f, "'NULL'\n" );
 
-  fprintf( f, "# transformation names\n" );
+  fprintf( f, "# transformations\n" );
 
   fprintf( f, "- transformation to be applied (real units) is " );
   if ( p->input_real_transformation != (char*)NULL && p->input_real_transformation[0] != '\0' )
@@ -1162,6 +1214,13 @@ void API_PrintParam_applyTrsf( FILE *theFile, char *program,
     fprintf( f, "'%s'\n", p->output_voxel_transformation );
   else
     fprintf( f, "'NULL'\n" );
+
+  fprintf( f, "- default transformation to be applied:\n" );
+  switch ( p->default_transformation ) {
+  default :      fprintf( f, "unknown\n" ); break;
+  case _BAL_IDENTITY_TRANSFORMATION_  : fprintf( f, "identity\n" ); break;
+  case _BAL_FOVCENTER_TRANSFORMATION_ : fprintf( f, "FOV center superimposition\n" ); break;
+  }
 
   fprintf( f, "# template for output image geometry\n" );
 
@@ -1340,14 +1399,23 @@ void API_ParseParam_applyTrsf( int firstargc, int argc, char *argv[],
             outputisread = 1;
           }
 
-          /* transformation names
+          /* transformations
            */
 
           else if ( strcmp ( argv[i], "-transformation") == 0
                     || (strcmp ( argv[i], "-trsf") == 0 && argv[i][5] == '\0') ) {
                  i++;
                  if ( i >= argc) API_ErrorParse_applyTrsf( (char*)NULL, "parsing -transformation", 0 );
-                 (void)strcpy( p->input_real_transformation, argv[i] );
+                 if ( strcmp ( argv[i], "identity") == 0 && argv[i][8] == '\0' ) {
+                   p->default_transformation = _BAL_IDENTITY_TRANSFORMATION_;
+                 }
+                 else if ( (strcmp ( argv[i], "fovcenter") == 0 && argv[i][9] == '\0')
+                           || (strcmp ( argv[i], "fovcenters") == 0 && argv[i][10] == '\0') ) {
+                     p->default_transformation = _BAL_FOVCENTER_TRANSFORMATION_;
+                 }
+                 else {
+                   (void)strcpy( p->input_real_transformation, argv[i] );
+                 }
           }
           else if ( strcmp ( argv[i], "-voxel-transformation") == 0
                     || (strcmp ( argv[i], "-voxel-trsf") == 0 && argv[i][11] == '\0') ) {
@@ -1366,6 +1434,26 @@ void API_ParseParam_applyTrsf( int firstargc, int argc, char *argv[],
                  i++;
                  if ( i >= argc) API_ErrorParse_applyTrsf( (char*)NULL, "parsing -result-voxel-transformation", 0 );
                  (void)strcpy( p->output_voxel_transformation, argv[i] );
+          }
+
+          else if ( strcmp ( argv[i], "-default-transformation" ) == 0
+                    || (strcmp ( argv[i], "-default-trsf" ) == 0 && argv[i][13] == '\0')
+                    || strcmp ( argv[i], "-initial-transformation" ) == 0
+                    || (strcmp ( argv[i], "-initial-trsf")  == 0 && argv[i][13] == '\0')
+                    || (strcmp ( argv[i], "-init-trsf")  == 0 && argv[i][10] == '\0') ) {
+                 i++;
+                 if ( i >= argc) API_ErrorParse_applyTrsf( (char*)NULL, "parsing -default-transformation", 0 );
+                 if ( strcmp ( argv[i], "identity") == 0 && argv[i][8] == '\0' ) {
+                   p->default_transformation = _BAL_IDENTITY_TRANSFORMATION_;
+                 }
+                 else if ( (strcmp ( argv[i], "fovcenter") == 0 && argv[i][9] == '\0')
+                           || (strcmp ( argv[i], "fovcenters") == 0 && argv[i][10] == '\0') ) {
+                     p->default_transformation = _BAL_FOVCENTER_TRANSFORMATION_;
+                 }
+                 else {
+                   fprintf( stderr, "unknown default transformation type: '%s'\n", argv[i] );
+                   API_ErrorParse_applyTrsf( (char*)NULL, "parsing -default-transformation ...\n", 0 );
+                 }
           }
 
           /* template

@@ -96,7 +96,7 @@ In addition, when changing parameters, comparing the parameter values with the \
 
 \subsection{Initial transformations}
 Two transformations, $T_{left}$ and $T_{init}$, can be passed
-as parameters. While $T_left$ (left-handed transformation) will remain unchanged during the
+as parameters. While $T_{left}$ (left-handed transformation) will remain unchanged during the
 registration procedure, $T_{init}$ is the initial value of the
 transformation to be computed (recall this is an iterative
 calculation). More precisely (see also section~\ref{sec:field:view:center:alignment}), let $T^{(0)}$ denote the initial value
@@ -107,9 +107,8 @@ the transformation to be computed.
 \item else 
 \begin{itemize}
 \item if $T_{left}$ is given, $T^{(0)}  = \mathbf{Id}$
-\item else (neither $T_{init}$ nor $T_{left}$ are given), $T^{(0)}$ is the translation that superimposes the
-centers of the fields of view of the two images $I_{ref}$ and
-$I_{flo}$.
+\item else (neither $T_{init}$ nor $T_{left}$ are given), $T^{(0)}$ is the default transformation (can be specified with the \option{-default-transformation} option). It is either the translation that superimposes the centers of the fields of view (\option{-default-transformation fovcenter}) of the two images $I_{ref}$ and
+$I_{flo}$ or the identity (\option{-default-transformation identity}).
 \end{itemize}
 \end{itemize}
 
@@ -499,6 +498,23 @@ $I_{balad}$ can also be computed from from the \textit{voxel} transformation $\h
 
 
 
+
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%
+%
+%
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+
+
+
+
+
+
+
+
+
 \section{\applyTrsf}
 \label{sec:applyTrsf}
 
@@ -540,7 +556,7 @@ $$
 \subsection{Changing image geometry}
 \label{sec:changing:image:geometry}
 
-\applyTrsf may be used to change the image geometry, i.e. either changing the number of pixel/voxel or the pixel/voxel size along a direction. Please note that the field of view is considered as unchanged, so that the number of pixel/voxel time the pixel/voxel size is a constant. This is done by the \option{-resize}.
+\applyTrsf may be used to change the image geometry, i.e. either changing the number of pixel/voxel or the pixel/voxel size along a direction. Please note that the field of view is considered as unchanged, so that the number of pixel/voxel time the pixel/voxel size is a constant. This is done by the \option{-resize} option.
 
 Let consider an image $I$ of dimensions $1000 \times 1000$ with a pixel size of 1 along each direction. Then
 \begin{code}{0.8}
@@ -548,9 +564,16 @@ Let consider an image $I$ of dimensions $1000 \times 1000$ with a pixel size of 
 \end{code}
 creates an image $J$  of dimensions $200 \times 300$: pixel/voxel sizes are calculated so as the image spans the same field of view and are respectively $5.00$ and $3.33$. The transformation $T$ is the transformation used to resample $I$, we have then $J = I \circ T$. When expressed in the real frame, this transformation is a translation (see section \ref{sec:frame:conversion}). 
 
-
-
-
+Image geometry can also be "imported" from an other image. Let us consider an image $I$ and a template image $R$, thus 
+\begin{code}{0.8}
+\% \applyTrsf -flo $I$ -ref $R$ -res $J$ -default-transformation identity
+\end{code}
+will produce an image $J$ with the same geometry than the image $R$. The voxel-to-voxel transformation that allows to resample $I$ in $R$ is here computed by
+\begin{displaymath}
+\mathbf{H}_{I,\mathbb{Z} \leftarrow \mathbb{R}} 
+\circ \mathbf{Id} \circ \mathbf{H}_{R,\mathbb{R} \leftarrow \mathbb{Z}} 
+\end{displaymath}
+(please refer to section \ref{sec:frame:conversion} for the definition of the conversion matrices $\mathbf{H}$). Such an example (options are similar to \blockmatching command line) emphasizes that \applyTrsf can be used to resample the floating image $I$ at its starting position when registering it with a reference image $R$.
 
 \section{\applyTrsfToPoints}
 

@@ -48,6 +48,8 @@ typedef struct lineCmdParamApplyTrsf {
   char output_real_transformation[STRINGLENGTH];
   char output_voxel_transformation[STRINGLENGTH];
 
+  enumInitialTransfo default_transformation;
+
   /* template / reference (geometry of reference image)
    */
   char template_name[STRINGLENGTH];

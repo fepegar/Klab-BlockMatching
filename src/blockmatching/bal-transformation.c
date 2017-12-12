@@ -1569,8 +1569,12 @@ int BAL_DoesTransformationExist( bal_transformation *t )
 {
   char *proc = "BAL_DoesTransformationExist";
 
+  if ( t == (bal_transformation*)NULL )
+    return( 0 );
+
   switch ( t->type ) {
 
+  default :
   case UNDEF_TRANSFORMATION :
     return( 0 );
     

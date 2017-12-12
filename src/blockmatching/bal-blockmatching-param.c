@@ -72,6 +72,7 @@ void BAL_InitBlockMatchingPyramidalParameters( bal_blockmatching_pyramidal_param
 
   /* transformation parameters
    */
+  p->default_transformation = _BAL_FOVCENTER_TRANSFORMATION_;
   p->transformation_type = RIGID_3D;
   
   /* sigma for elastic regularization (only for vectorfield)
@@ -299,6 +300,13 @@ void BAL_PrintBlockMatchingPyramidalParameters( FILE* f, bal_blockmatching_pyram
   fprintf( f, "p->similarity_measure_threshold = %f\n", p->similarity_measure_threshold );
 
   fprintf( f, "--- transformation parameters\n" );  
+
+  fprintf( f, "p->default_transformation = " );
+  switch ( p->default_transformation ) {
+  default :      fprintf( f, "unknown\n" ); break;
+  case _BAL_IDENTITY_TRANSFORMATION_  : fprintf( f, "_BAL_IDENTITY_TRANSFORMATION_\n" ); break;
+  case _BAL_FOVCENTER_TRANSFORMATION_ : fprintf( f, "_BAL_FOVCENTER_TRANSFORMATION_\n" ); break;
+  }
 
   BAL_PrintTypeTransformation( f, p->transformation_type, "p->transformation_type = " );
 

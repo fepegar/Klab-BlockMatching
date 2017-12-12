@@ -188,6 +188,8 @@ int BAL_AllocImageGeometry( bal_image *image )
   _identity_mat( &(image->to_voxel) );
   _identity_mat( &(image->sform_to_real) );
 
+  image->geometry = _BAL_HOMOTHETY_GEOMETRY_;
+
   return( 1 );
 }
 
@@ -266,8 +268,68 @@ int BAL_CopyImageGeometry( bal_image *theIm, bal_image *resIm )
 
 
 
+int BAL_ResizeImageGeometry( bal_image *theIm, bal_image *resIm )
+{
+  char *proc = "BAL_ResizeImageGeometry";
+  _MATRIX theFROMres;
+  int i;
 
+  _init_mat( &theFROMres );
 
+  switch( theIm->geometry ) {
+  case _BAL_UNKNOWN_GEOMETRY_ :
+  case _BAL_HOMOTHETY_GEOMETRY_ :
+    if ( BAL_SetImageVoxelSizes( resIm, resIm->vx, resIm->vy, resIm->vz ) != 1 ) {
+      if ( _verbose_ )
+        fprintf( stderr, "%s: unable to set image voxel sizes\n", proc );
+      return(-1);
+    }
+    resIm->geometry = _BAL_HOMOTHETY_GEOMETRY_;
+    break;
+
+  case _BAL_TRANSLATION_GEOMETRY_ :
+  case _BAL_QFORM_GEOMETRY_ :
+    if ( _alloc_mat( &theFROMres, 4, 4 ) != 1 ) {
+      if ( _verbose_ )
+        fprintf( stderr, "%s: matrix #1 allocation error\n", proc );
+      return( -1 );
+    }
+
+    for ( i=0; i<16; i++ )
+      theFROMres.m[i] = 0.0;
+
+    /* compute voxel to voxel conversion matrix
+     */
+    theFROMres.m[ 0] = resIm->vx/theIm->vx;
+    theFROMres.m[ 5] = resIm->vy/theIm->vy;
+    theFROMres.m[10] = resIm->vz/theIm->vz;
+    theFROMres.m[15] = 1.0;
+    theFROMres.m[ 3] = (resIm->vx - theIm->vx) / (2 * theIm->vx);
+    theFROMres.m[ 7] = (resIm->vy - theIm->vy) / (2 * theIm->vy);
+    theFROMres.m[11] = (resIm->vz - theIm->vz) / (2 * theIm->vz);
+
+    _mult_mat( &(theIm->to_real), &theFROMres, &(resIm->to_real) );
+
+    if ( InverseMat4x4( resIm->to_real.m, resIm->to_voxel.m ) != 4 ) {
+      _free_mat( &theFROMres );
+      if ( _verbose_ )
+        fprintf( stderr, "%s: matrix inversion error\n", proc );
+      return( -1 );
+    }
+    resIm->geometry = theIm->geometry;
+    resIm->qform_code = theIm->qform_code;
+
+    if ( theIm->sform_code ) {
+      _mult_mat( &(theIm->sform_to_real), &theFROMres, &(resIm->sform_to_real) );
+    }
+    resIm->sform_code = theIm->sform_code;
+
+    _free_mat( &theFROMres );
+    break;
+  }
+
+  return( 1 );
+}
 
 
 

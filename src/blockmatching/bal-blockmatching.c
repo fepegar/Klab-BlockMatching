@@ -338,7 +338,7 @@ bal_transformation *BAL_PyramidalBlockMatching( bal_image *theInrimage_ref,
    *
    * 1. theLeftTransformation == NULL && theInitResult == NULL
    *     allocate theResultTransformation
-   *     set it with BAL_ComputeImageToImageTransformation()
+   *     set it with BAL_ComputeInitialTransformation()
    *     change it to the right type
    * 2. theLeftTransformation == NULL && theInitResult != NULL
    *     set theInitResult to the right type
@@ -391,11 +391,12 @@ bal_transformation *BAL_PyramidalBlockMatching( bal_image *theInrimage_ref,
                     || fabs( theInrimage_ref->vz - theInrimage_flo->vz )/theInrimage_ref->vz > 0.001
                     ) {
         /* see bal-transformation-tools.c
-         * for BAL_ComputeImageToImageTransformation()
+         * for BAL_ComputeInitialTransformation()
          */
-        if ( BAL_ComputeImageToImageTransformation( theInrimage_ref,
-                                                    theInrimage_flo,
-                                                    currTransformation ) != 1 ) {
+        if ( BAL_ComputeInitialTransformation( theInrimage_ref,
+                                               theInrimage_flo,
+                                               currTransformation,
+                                               param.default_transformation ) != 1 ) {
           if ( _verbose_ )
               fprintf( stderr, "%s: can not compute initial result transformation\n", proc );
           BAL_FreeTransformation( currTransformation );

@@ -103,6 +103,8 @@ extern int BAL_SetImageVoxelSizes( bal_image *image,
 
 extern int BAL_CopyImageGeometry( bal_image *theIm, bal_image *resIm );
 
+extern int BAL_ResizeImageGeometry( bal_image *theIm, bal_image *resIm );
+
 
 
 

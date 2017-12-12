@@ -64,6 +64,11 @@ extern int BAL_ComputeImageToImageTransformation( bal_image *subsampled_image,
                                                   bal_image *image_to_be_subsampled,
                                                   bal_transformation *subsampling_trsf );
 
+extern int BAL_ComputeInitialTransformation( bal_image *refIm,
+                                             bal_image *floIm,
+                                             bal_transformation *theTrsf,
+                                             enumInitialTransfo initial_transformation );
+
 
 
 /***************************************************
