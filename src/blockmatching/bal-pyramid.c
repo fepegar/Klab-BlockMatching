@@ -469,6 +469,26 @@ int BAL_AllocComputeSubsampledImage( bal_image *resIm,
     return( -1 );
   }
 
+  /* allocation
+   */
+
+  if ( BAL_AllocImage( resIm ) != 1 ) {
+      BAL_FreeImage( resIm );
+      if ( _verbose_ )
+        fprintf( stderr, "%s: unable to allocate image\n", proc );
+      return( -1 );
+  }
+
+  if ( BAL_AllocImageGeometry( resIm ) != 1 ) {
+    BAL_FreeImage( resIm );
+    if ( _verbose_ )
+      fprintf( stderr, "%s: unable to initialize image geometry\n", proc );
+    return( -1 );
+  }
+
+  /* compute image geometry
+   */
+
   if ( dimx > 1 && theIm->ncols > 1 ) {
     resIm->vx = ( (double)theIm->ncols * theIm->vx ) / (double)dimx;
   }
@@ -488,21 +508,7 @@ int BAL_AllocComputeSubsampledImage( bal_image *resIm,
     resIm->vz =  theIm->vz;
   }
 
-  if ( BAL_AllocImage( resIm ) != 1 ) {
-      BAL_FreeImage( resIm );
-      if ( _verbose_ )
-        fprintf( stderr, "%s: unable to allocate image\n", proc );
-      return( -1 );
-    }
 
-  /* compute image geometry
-   */
-  if ( BAL_AllocImageGeometry( resIm ) != 1 ) {
-    BAL_FreeImage( resIm );
-    if ( _verbose_ )
-      fprintf( stderr, "%s: unable to initialize image geometry\n", proc );
-    return( -1 );
-  }
 
   /* we want the centers to superimpose, thus
    * AT CTZ + TT = AR CRZ + TR
