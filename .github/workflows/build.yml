@@ -55,18 +55,14 @@ jobs:
       - name: Configure (Unix)
         if: runner.os != 'Windows'
         run: |
-          CMAKE_ARGS="-DCMAKE_BUILD_TYPE=Release -DBUILD_SHARED_LIBS=OFF -Dvt_USE_OPENMP=${{ matrix.openmp }}"
-          if [ "${{ matrix.openmp }}" = "ON" ] && [ "${{ runner.os }}" = "macOS" ]; then
-            LIBOMP_PREFIX=$(brew --prefix libomp)
-            CMAKE_ARGS="$CMAKE_ARGS -DOpenMP_C_FLAGS=-Xclang\ -fopenmp"
-            CMAKE_ARGS="$CMAKE_ARGS -DOpenMP_C_LIB_NAMES=omp"
-            CMAKE_ARGS="$CMAKE_ARGS -DOpenMP_omp_LIBRARY=$LIBOMP_PREFIX/lib/libomp.dylib"
-            CMAKE_ARGS="$CMAKE_ARGS -DOpenMP_C_INCLUDE_DIR=$LIBOMP_PREFIX/include"
-          fi
-          if [ -n "${{ matrix.cmake_extra }}" ]; then
-            CMAKE_ARGS="$CMAKE_ARGS ${{ matrix.cmake_extra }}"
-          fi
-          cmake -B build $CMAKE_ARGS
+          cmake -B build \
+            -DCMAKE_BUILD_TYPE=Release \
+            -DBUILD_SHARED_LIBS=OFF \
+            -Dvt_USE_OPENMP=${{ matrix.openmp }} \
+            ${{ matrix.cmake_extra }}
+        env:
+          LDFLAGS: ${{ runner.os == 'macOS' && matrix.openmp == 'ON' && '-L/opt/homebrew/opt/libomp/lib' || '' }}
+          CPPFLAGS: ${{ runner.os == 'macOS' && matrix.openmp == 'ON' && '-I/opt/homebrew/opt/libomp/include' || '' }}
 
       - name: Configure (Windows)
         if: runner.os == 'Windows'
