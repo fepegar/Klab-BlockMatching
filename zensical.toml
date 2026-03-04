@@ -1,0 +1,11 @@
+[project]
+site_name = "Klab-BlockMatching"
+site_url = "https://fepegar.github.io/Klab-BlockMatching/"
+docs_dir = "docs/"
+site_dir = "site/"
+nav = [
+  { "Home" = "index.md" },
+  { "Installation" = "installation.md" },
+  { "Tools" = "tools.md" },
+  { "Building from source" = "building.md" },
+]

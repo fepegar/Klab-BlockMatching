@@ -1,0 +1,10 @@
+[tools]
+uv = "latest"
+
+[tasks.docs-serve]
+description = "Serve documentation locally"
+run = "uv run --with zensical zensical serve"
+
+[tasks.docs-build]
+description = "Build documentation"
+run = "uv run --with zensical zensical build --clean"
