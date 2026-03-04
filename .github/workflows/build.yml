@@ -29,10 +29,6 @@ jobs:
             artifact: klab-blockmatching-macos-x86_64
             openmp: OFF
             cmake_extra: -DCMAKE_OSX_ARCHITECTURES=x86_64
-          - os: windows-latest
-            name: windows-x86_64
-            artifact: klab-blockmatching-windows-x86_64
-            openmp: ON
 
     runs-on: ${{ matrix.os }}
     name: Build (${{ matrix.name }})
@@ -48,12 +44,7 @@ jobs:
         if: runner.os == 'macOS' && matrix.openmp == 'ON'
         run: brew install libomp
 
-      - name: Install dependencies (Windows)
-        if: runner.os == 'Windows'
-        run: vcpkg install zlib:x64-windows
-
-      - name: Configure (Unix)
-        if: runner.os != 'Windows'
+      - name: Configure
         run: |
           cmake -B build \
             -DCMAKE_BUILD_TYPE=Release \
@@ -64,43 +55,19 @@ jobs:
           LDFLAGS: ${{ runner.os == 'macOS' && matrix.openmp == 'ON' && '-L/opt/homebrew/opt/libomp/lib' || '' }}
           CPPFLAGS: ${{ runner.os == 'macOS' && matrix.openmp == 'ON' && '-I/opt/homebrew/opt/libomp/include' || '' }}
 
-      - name: Configure (Windows)
-        if: runner.os == 'Windows'
-        run: |
-          cmake -B build `
-            -DCMAKE_BUILD_TYPE=Release `
-            -DBUILD_SHARED_LIBS=OFF `
-            -Dvt_USE_OPENMP=ON `
-            -DCMAKE_TOOLCHAIN_FILE="$env:VCPKG_INSTALLATION_ROOT/scripts/buildsystems/vcpkg.cmake"
-
       - name: Build
         run: cmake --build build --config Release --parallel
 
-      - name: Package (Unix)
-        if: runner.os != 'Windows'
+      - name: Package
         run: |
           cd build/bin
           tar czf ../../${{ matrix.artifact }}.tar.gz *
 
-      - name: Package (Windows)
-        if: runner.os == 'Windows'
-        shell: pwsh
-        run: |
-          Compress-Archive -Path build/bin/Release/* -DestinationPath ${{ matrix.artifact }}.zip
-
-      - name: Upload artifact (Unix)
-        if: runner.os != 'Windows'
+      - name: Upload artifact
         uses: actions/upload-artifact@v4
         with:
           name: ${{ matrix.artifact }}
           path: ${{ matrix.artifact }}.tar.gz
-
-      - name: Upload artifact (Windows)
-        if: runner.os == 'Windows'
-        uses: actions/upload-artifact@v4
-        with:
-          name: ${{ matrix.artifact }}
-          path: ${{ matrix.artifact }}.zip
 
   release:
     if: startsWith(github.ref, 'refs/tags/v')
