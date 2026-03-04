@@ -51,7 +51,7 @@ Binaries will be in `build/bin/`.
 
 ## License
 
-Copyright © INRIA 2013. See [LICENSE.txt](LICENSE.txt) for details.
+Copyright © INRIA 2016. See [LICENSE.txt](LICENSE.txt) for details.
 
 ## Authors
 
