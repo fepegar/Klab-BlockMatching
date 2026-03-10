@@ -39,6 +39,7 @@ Download pre-built binaries from the [Releases](https://github.com/fepegar/Klab-
 - CMake ≥ 2.8
 - zlib (required)
 - OpenMP (optional, recommended)
+- NIfTI library (optional, enables NIfTI read/write support)
 
 ### Build
 
@@ -48,6 +49,19 @@ cmake --build build --parallel
 ```
 
 Binaries will be in `build/bin/`.
+
+To enable NIfTI support, first configure the vendored NIfTI dependency and
+point the main build at its build tree:
+
+```bash
+cmake -S external/NIFTICLIB/nifticlib-2.0.0 -B build-nifti -DCMAKE_BUILD_TYPE=Release -DBUILD_SHARED_LIBS=OFF
+cmake --build build-nifti --target znz niftiio --parallel
+cmake -B build -DCMAKE_BUILD_TYPE=Release -Dvt_USE_OPENMP=ON -DNIFTI_DIR="$PWD/build-nifti"
+cmake --build build --parallel
+```
+
+A dedicated Linux CI job validates this optional NIfTI path by generating a
+`.nii.gz` file with `test-libio` and reading it back.
 
 ## License
 

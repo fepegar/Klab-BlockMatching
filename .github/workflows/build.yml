@@ -64,9 +64,57 @@ jobs:
           name: ${{ matrix.artifact }}
           path: build/bin/*
 
+  nifti:
+    runs-on: ubuntu-latest
+    name: Build (linux-x86_64-nifti)
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Install dependencies
+        run: sudo apt-get update && sudo apt-get install -y zlib1g-dev
+
+      - name: Configure vendored NIfTI
+        run: |
+          cmake -S external/NIFTICLIB/nifticlib-2.0.0 \
+            -B build-nifti \
+            -DCMAKE_BUILD_TYPE=Release \
+            -DBUILD_SHARED_LIBS=OFF
+
+      - name: Build vendored NIfTI
+        run: cmake --build build-nifti --target znz niftiio --parallel
+
+      - name: Configure
+        shell: bash
+        run: |
+          set -euo pipefail
+          cmake -B build \
+            -DCMAKE_BUILD_TYPE=Release \
+            -DBUILD_SHARED_LIBS=OFF \
+            -Dvt_USE_OPENMP=OFF \
+            -DNIFTI_DIR="${{ github.workspace }}/build-nifti" \
+            2>&1 | tee configure.log
+
+      - name: Verify NIfTI was found
+        shell: bash
+        run: |
+          grep -q -- "-- nifti was found" configure.log
+          ! grep -q -- "nifti was NOT found" configure.log
+
+      - name: Build
+        run: cmake --build build --config Release --parallel
+
+      - name: Smoke test NIfTI I/O
+        run: |
+          input=src/blockmatching/documentation/use-examples/data/irm2D-1.hdr
+          output="${RUNNER_TEMP}/generated-from-analyze.nii.gz"
+          build/bin/test-libio "$input" "$output"
+          test -f "$output"
+          build/bin/test-libio "$output"
+
   release:
     if: startsWith(github.ref, 'refs/tags/v')
-    needs: build
+    needs: [build, nifti]
     runs-on: ubuntu-latest
     permissions:
       contents: write
